@@ -1,10 +1,15 @@
 /**
- * Shared Global Helper with Execution Time Safeguards for Google Apps Script
+ * Shared Global Helper with Execution Time Safeguards & Gemini 3.x / Latest Models Only
  */
 function callGeminiWithFallback(apiKey, prompt) {
-  const models = ["gemini-flash-latest", "gemini-3.7-flash", "gemini-3-flash"];
+  // Strictly latest and 3-series Flash model endpoints
+  const models = [
+    "gemini-flash-latest",
+    "gemini-3.7-flash",
+    "gemini-3.5-flash",
+  ];
 
-  const maxRetriesPerModel = 2; // Reduced to prevent hitting 6-min GAS quota
+  const maxRetriesPerModel = 2;
 
   for (const model of models) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
@@ -14,7 +19,7 @@ function callGeminiWithFallback(apiKey, prompt) {
       contentType: "application/json",
       payload: JSON.stringify(payload),
       muteHttpExceptions: true,
-      timeoutInSeconds: 45, // Hard ceiling per call to avoid hanging
+      timeoutInSeconds: 45, // Prevents script execution timeouts
     };
 
     let delayMs = 2000;
@@ -44,7 +49,7 @@ function callGeminiWithFallback(apiKey, prompt) {
           delayMs *= 2;
         } else {
           Logger.log(`Switching fallback model away from ${model}...`);
-          break; // Move to next model immediately
+          break;
         }
       } catch (e) {
         Logger.log(`Fetch error/timeout on ${model}: ${e.message}`);
@@ -56,5 +61,5 @@ function callGeminiWithFallback(apiKey, prompt) {
     }
   }
 
-  throw new Error("All Gemini model fallbacks failed or timed out.");
+  throw new Error("All Gemini 3.x Flash model fallbacks failed or timed out.");
 }
